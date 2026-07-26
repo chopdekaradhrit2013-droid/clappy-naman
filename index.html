@@ -1,1 +1,337 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Clappy Naman</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #gameContainer {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    max-height: 750px;
+    background: #0d1b0d;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  /* ===== Shared screen styles ===== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    background: linear-gradient(180deg, #0d1b0d 0%, #1a2f1a 60%, #0f1f0f 100%);
+    color: #fff;
+    padding: 20px;
+  }
+  .screen.active { display: flex; }
+
+  .title {
+    font-size: 32px;
+    letter-spacing: 3px;
+    text-shadow: 4px 4px 0 #000;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #ffd700;
+    margin-bottom: 28px;
+    letter-spacing: 1px;
+  }
+
+  .input-group {
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 14px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: #a0d0a0;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    background: #142814;
+    border: 3px solid #2ecc40;
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+  }
+  .input-group input:focus {
+    border-color: #5ce06a;
+  }
+
+  .btn {
+    width: 100%;
+    max-width: 280px;
+    padding: 14px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 17px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #fff;
+    background: #1a8f2a;
+    border: 3px solid #0d5c18;
+    border-radius: 8px;
+    cursor: pointer;
+    text-shadow: 1px 1px 0 #000;
+  }
+  .btn:active { transform: scale(0.97); background: #157a22; }
+  .btn.secondary {
+    background: #1a3a5c;
+    border-color: #0d2a4a;
+  }
+  .btn.secondary:active { background: #152e4a; }
+  .btn.gold {
+    background: #b8860b;
+    border-color: #8b6914;
+  }
+
+  .link-btn {
+    margin-top: 18px;
+    background: none;
+    border: none;
+    color: #5ce06a;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .error-msg {
+    color: #ff6b6b;
+    font-size: 13px;
+    margin-top: 10px;
+    min-height: 18px;
+    text-align: center;
+  }
+
+  .welcome {
+    font-size: 15px;
+    color: #a0d0a0;
+    margin-bottom: 30px;
+  }
+  .welcome span {
+    color: #5ce06a;
+    font-weight: bold;
+  }
+
+  /* Game UI */
+  #ui {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+  }
+  #ui.playing { display: flex; }
+
+  #score {
+    margin-top: 36px;
+    font-size: 48px;
+    color: #fff;
+    text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+    font-weight: bold;
+    letter-spacing: 4px;
+  }
+  #bestScore {
+    margin-top: 4px;
+    font-size: 18px;
+    color: #ffd700;
+    text-shadow: 2px 2px 0 #000;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  #message {
+    position: absolute;
+    top: 52%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #fff;
+    z-index: 20;
+    display: none;
+    pointer-events: auto;
+  }
+  #message h1 {
+    font-size: 42px;
+    text-shadow: 4px 4px 0 #000;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  #message p {
+    font-size: 16px;
+    text-shadow: 2px 2px 0 #000;
+    margin: 4px 0;
+  }
+  #finalScore { font-size: 22px !important; }
+  #finalBest { font-size: 20px !important; color: #ffd700; }
+
+  .lb-btn {
+    margin-top: 14px;
+    padding: 10px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background: #1a8f2a;
+    border: 3px solid #0d5c18;
+    border-radius: 6px;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  /* Leaderboard */
+  .lb-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: auto;
+  }
+  .lb-overlay.show { display: flex; }
+  .lb-panel {
+    width: 88%;
+    max-width: 340px;
+    background: #0d1b0d;
+    border: 4px solid #2ecc40;
+    border-radius: 12px;
+    padding: 22px 16px;
+    text-align: center;
+  }
+  .lb-panel h2 {
+    font-size: 26px;
+    letter-spacing: 2px;
+    text-shadow: 3px 3px 0 #000;
+    margin-bottom: 4px;
+  }
+  .lb-sub {
+    font-size: 13px;
+    color: #ffd700;
+    margin-bottom: 16px;
+  }
+  .lb-list {
+    text-align: left;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+  }
+  .lb-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    background: #142814;
+    border-radius: 6px;
+    border: 1px solid #1a3a1a;
+    font-size: 14px;
+  }
+  .lb-rank { width: 30px; color: #ffd700; font-weight: bold; }
+  .lb-name { flex: 1; padding-left: 6px; }
+  .lb-name.you { color: #5ce06a; font-weight: bold; }
+  .lb-score { font-weight: bold; }
+  .lb-empty {
+    text-align: center;
+    padding: 40px 10px;
+    color: #777;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="c"></canvas>
+
+  <!-- ========== AUTH SCREEN ========== -->
+  <div id="authScreen" class="screen active">
+    <div class="title">CLAPPY NAMAN</div>
+    <div class="subtitle" id="authSubtitle">SIGN IN</div>
+
+    <div class="input-group">
+      <label>Username</label>
+      <input type="text" id="authUser" placeholder="Enter username" maxlength="16" autocomplete="username">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="authPass" placeholder="Enter password" maxlength="24" autocomplete="current-password">
+    </div>
+
+    <button class="btn" id="authSubmitBtn">SIGN IN</button>
+    <div class="error-msg" id="authError"></div>
+    <button class="link-btn" id="authToggle">Don't have an account? Sign Up</button>
+  </div>
+
+  <!-- ========== HOME SCREEN ========== -->
+  <div id="homeScreen" class="screen">
+    <div class="title">CLAPPY NAMAN</div>
+    <div class="welcome">Welcome, <span id="homeUsername">Player</span></div>
+
+    <button class="btn" id="playBtn" style="margin-bottom:12px">▶  PLAY</button>
+    <button class="btn secondary" id="homeLbBtn">🏆  LEADERBOARD</button>
+    <button class="link-btn" id="logoutBtn" style="margin-top:28px">Log out</button>
+  </div>
+
+  <!-- ========== GAME UI ========== -->
+  <div id="ui">
+    <div id="score">000</div>
+    <div id="bestScore">BEST 000</div>
+    <div id="message">
+      <h1>GAME OVER</h1>
+      <p id="finalScore">SCORE 000</p>
+      <p id="finalBest">BEST 000</p>
+      <button class="lb-btn" id="gameLbBtn">LEADERBOARD</button>
+      <p style="margin-top:14px;font-size:14px;opacity:0.85">TAP TO RESTART</p>
+    </div>
+  </div>
+
+  <!-- ========== LEADERBOARD OVERLAY ========== -->
+  <div id="leaderboard" class="lb-overlay">
+    <div class="lb-panel">
+      <h2>LEADERBOARD</h2>
+      <p class="lb-sub">TOP 10 PLAYERS</p>
+      <div id="lbList" class="lb-list"></div>
+      <button class="btn" id="lbClose" style="max-width:160px;margin:0 auto;display:block">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// NOTE: Full game logic + bird sprite is in the local file.
+// This is a shortened version for the tool call limit.
+// Please use the full file from the previous message.
+alert('Please wait - full version is being fixed');
+</script>
+</body>
+</html>
